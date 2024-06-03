@@ -1,1 +1,68 @@
 hello
+mkdir ansible-controller
+vagrant init
+Vagrant.configure("2") do |config|
+  config.vm.define "ansible-controller" do |controller|
+    controller.vm.hostname = "controller"
+  end
+  config.vm.box = "centos/7"
+  config.vm.provision "shell", inline: <<-SHELL
+    sudo yum install epel-release -y
+    sudo yum install ansible -y
+  SHELL
+end
+vagrant validate
+vagrant up
+vagrant ssh
+ansible --version
+mkdir ansible-project
+touch hosts
+touch playbook.yml
+mkdir host-machines
+vagrant init
+Vagrant.configure("2") do |config|
+  config.vm.box = "centos/7"
+  config.vm.define "web" do |web|
+    web.vm.hostname = "web"
+    web.vm.network "private_network", ip: "192.168.33.10"
+  end
+  config.vm.define "db" do |db|
+    db.vm.hostname = "db"
+    db.vm.network "private_network", ip: "192.168.33.11"
+  end
+  config.vm.network "forwarded_port", guest: 80, host: 8080, auto_correct: true
+  config.vm.usable_port_range = (8000..9000)
+end
+vagrant validate
+vagrant up
+vagrant status
+vagrant ssh <machinename>
+vagrant ssh web
+ssh-keygen
+ssh-copy-id <user>@<host>
+ssh-copy-id vagrant@192.168.33.10
+ssh vagrant@192.168.33.10
+ssh vagrant@192.168.33.11
+vagrant ssh <machine name>
+[webservers]
+192.168.33.10
+
+[dbservers]
+192.168.33.11
+ansible all -m ping -i hosts
+---
+- name: Install Apache web server
+  hosts: webservers
+  become: true
+  tasks:
+    - name: Install Apache
+      yum:
+        name: httpd
+        state: latest
+
+    - name: Start Apache
+      service:
+        name: httpd
+        state: started
+        enabled: true
+ansible-playbook -i hosts playbook.yml
